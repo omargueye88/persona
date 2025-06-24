@@ -1,67 +1,86 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'firebase/auth';
-import { getFirestore, enableNetwork, disableNetwork, doc, setDoc, getDoc } from 'firebase/firestore';
-import { getAnalytics } from 'firebase/analytics';
+import { Timestamp, FieldValue } from 'firebase/firestore';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyADKzOMEhZpXnTAJKc8h9Nlsk7koZ3JWAI",
-  authDomain: "persona-d012a.firebaseapp.com",
-  projectId: "persona-d012a",
-  storageBucket: "persona-d012a.firebasestorage.app",
-  messagingSenderId: "288163146357",
-  appId: "1:288163146357:web:cebc9c763b19ceaea7a63c"
-};
+export interface PersonaData {
+  name: string;
+  age: string;
+  profession: string;
+  traits: string;
+  backstory?: string;
+  hobbies?: string[];
+  quirks?: string[];
+}
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+export interface GameData {
+  id: string;
+  hostId: string;
+  hostName: string;
+  phase: 'waiting' | 'playing' | 'voting' | 'reveal' | 'finished';
+  round: number;
+  maxPlayers: number;
+  currentPlayers: number;
+  timeRemaining: number;
+  isActive: boolean;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
+  settings: {
+    roundDuration: number;
+    votingDuration: number;
+    minPlayers: number;
+    maxRounds: number;
+  };
+}
 
-// Initialize Firebase services
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const analytics = getAnalytics(app);
+export interface PlayerData {
+  id: string;
+  gameId: string;
+  playerId: string;
+  playerName: string;
+  isReady: boolean;
+  isConnected: boolean;
+  score: number;
+  persona: PersonaData | null;
+  joinedAt: Timestamp | FieldValue;
+  lastSeen: Timestamp | FieldValue;
+  updatedAt?: Timestamp | FieldValue;
+}
 
-// Auth functions
-export const createUserAccount = async (email: string, password: string, displayName: string) => {
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  const user = userCredential.user;
-  
-  // Update user profile with display name
-  await updateProfile(user, { displayName });
-  
-  // Store additional user data in Firestore
-  await setDoc(doc(db, 'users', user.uid), {
-    uid: user.uid,
-    email: user.email,
-    displayName: displayName,
-    createdAt: new Date(),
-    lastLoginAt: new Date(),
-    gamesPlayed: 0,
-    totalScore: 0
-  });
-  
-  return userCredential;
-};
+export interface MessageData {
+  id: string;
+  gameId: string;
+  playerId: string;
+  playerName: string;
+  message: string;
+  timestamp: Timestamp | FieldValue | Date;
+  isSystemMessage: boolean;
+}
 
-export const signInWithEmail = (email: string, password: string) => 
-  signInWithEmailAndPassword(auth, email, password);
+export interface VoteData {
+  id: string;
+  gameId: string;
+  voterId: string;
+  targetId: string;
+  guess: string;
+  round: number;
+  timestamp: Timestamp | FieldValue;
+}
 
-export const signOutUser = () => signOut(auth);
-export const onAuthStateChange = onAuthStateChanged;
+export interface GameStats {
+  id: string;
+  gameId: string;
+  totalMessages: number;
+  totalVotes: number;
+  averageGuessAccuracy: number;
+  mostActivePlayer: string;
+  gameEndedAt: Timestamp | FieldValue;
+}
 
-// User data functions
-export const getUserData = async (uid: string) => {
-  const userDoc = await getDoc(doc(db, 'users', uid));
-  return userDoc.exists() ? userDoc.data() : null;
-};
-
-export const updateUserLastLogin = async (uid: string) => {
-  await setDoc(doc(db, 'users', uid), {
-    lastLoginAt: new Date()
-  }, { merge: true });
-};
-
-// Firestore network functions
-export const enableFirestoreNetwork = () => enableNetwork(db);
-export const disableFirestoreNetwork = () => disableNetwork(db);
-
-export default app;
+export interface UserData {
+  uid: string;
+  email: string;
+  displayName: string;
+  createdAt: Date;
+  lastLoginAt: Date;
+  gamesPlayed: number;
+  totalScore: number;
+  avatar?: string;
+}
